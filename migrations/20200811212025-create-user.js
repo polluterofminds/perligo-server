@@ -29,8 +29,7 @@ module.exports = {
       },
       passwordHash: {
         allowNull: false,
-        type: Sequelize.STRING, 
-        defaultValue: "hhaydhggg"
+        type: Sequelize.STRING
       },
       lastName: {
         allowNull: true,

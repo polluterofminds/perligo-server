@@ -1,23 +1,29 @@
-const { ApolloServer, gql } = require('apollo-server');
+const { ApolloServer, gql, ApolloError } = require('apollo-server');
 const UserAPI = require('./datasources/user');
 
 const typeDefs = gql`
   type User {
     firstName: String, 
     lastName: String,
-    email: String
+    email: String, 
     avatar: String
   }
 
   # Mutations are updates to the DB (put, post, delete)
   type Mutation {
-    createUser(email: String!, firstName: String!, lastName: String!): User
+    createUser(email: String!, firstName: String!, lastName: String!, password: String!): UserResponse, 
+    logUserIn(email: String!, password: String!): UserResponse
   }
 
   # Query is a special type that lists all available queries
   type Query {
     users: [User],
     user(email:String!): User
+  }
+
+  type UserResponse {
+    message: String, 
+    body: String
   }
 `
 
@@ -36,8 +42,16 @@ const resolvers = {
     }
   },
   Mutation: {
-    createUser: async (_, { email, firstName, lastName }, { dataSources }) => {
-      return await dataSources.userAPI.createUser({ email, firstName, lastName })
+    createUser: async (_, { email, firstName, lastName, password }, { dataSources }) => {
+      return await dataSources.userAPI.createUser({ email, firstName, lastName, password })
+    }, 
+    logUserIn: async (_, { email, password }, { dataSources}) => {
+      const res = await dataSources.userAPI.logUserIn({ email, password });       
+      if(res.error) {
+        throw new ApolloError(res.message, res.code)
+      }
+
+      return res;
     }
   }
 };
