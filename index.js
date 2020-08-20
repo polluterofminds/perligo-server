@@ -1,31 +1,37 @@
-const { ApolloServer, gql, ApolloError } = require('apollo-server');
-const UserAPI = require('./datasources/user');
+const { ApolloServer, gql, ApolloError } = require("apollo-server");
+const UserAPI = require("./datasources/user");
 
 const typeDefs = gql`
   type User {
-    firstName: String, 
-    lastName: String,
-    email: String, 
+    firstName: String
+    lastName: String
+    email: String
     avatar: String
   }
 
   # Mutations are updates to the DB (put, post, delete)
   type Mutation {
-    createUser(email: String!, firstName: String!, lastName: String!, password: String!): UserResponse, 
+    createUser(
+      email: String!
+      firstName: String!
+      lastName: String!
+      password: String!
+    ): UserResponse
     logUserIn(email: String!, password: String!): UserResponse
+    verifyEmail(token: String!): UserResponse
   }
 
   # Query is a special type that lists all available queries
   type Query {
-    users: [User],
-    user(email:String!): User
+    users: [User]
+    user(email: String!): User
   }
 
   type UserResponse {
-    message: String, 
+    message: String
     body: String
   }
-`
+`;
 
 // Resolvers define the technique for fetching the types defined in the
 // schema. This resolver retrieves books from the "books" array above.
@@ -35,35 +41,54 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     users: async (parent, args, { dataSources }, info) => {
-      return await dataSources.userAPI.getUsers()
+      return await dataSources.userAPI.getUsers();
     },
     user: async (parent, args, { dataSources }, info) => {
-      return await dataSources.userAPI.getUser(args.email)
-    }
+      return await dataSources.userAPI.getUser(args.email);
+    },
   },
   Mutation: {
-    createUser: async (_, { email, firstName, lastName, password }, { dataSources }) => {
-      return await dataSources.userAPI.createUser({ email, firstName, lastName, password })
-    }, 
-    logUserIn: async (_, { email, password }, { dataSources}) => {
-      const res = await dataSources.userAPI.logUserIn({ email, password });       
-      if(res.error) {
-        throw new ApolloError(res.message, res.code)
+    createUser: async (
+      _,
+      { email, firstName, lastName, password },
+      { dataSources }
+    ) => {
+      const res = await dataSources.userAPI.createUser({
+        email,
+        firstName,
+        lastName,
+        password,
+      });
+      if (res.error) {
+        throw new ApolloError(res.message, res.code);
       }
-
       return res;
-    }
-  }
+    },
+    logUserIn: async (_, { email, password }, { dataSources }) => {
+      const res = await dataSources.userAPI.logUserIn({ email, password });
+      if (res.error) {
+        throw new ApolloError(res.message, res.code);
+      }
+      return res;
+    },
+    verifyEmail: async (_, token, { dataSources }) => {
+      const res = await dataSources.userAPI.verifyEmail(token);
+      if (res.error) {
+        throw new ApolloError(res.message, res.code);
+      }
+      return res;
+    },
+  },
 };
 
 // The ApolloServer constructor requires two parameters: your schema
 // definition and your set of resolvers.
-const server = new ApolloServer({ 
-  typeDefs, 
-  resolvers, 
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
   dataSources: () => ({
-    userAPI: new UserAPI()
-  }), 
+    userAPI: new UserAPI(),
+  }),
 });
 
 // The `listen` method launches a web server.

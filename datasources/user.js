@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const db = require("../utils");
 const User = db.models.user;
 
-const { passwordMatch } = require("../middleware/auth");
+const { passwordMatch, verifyToken } = require("../middleware/auth");
 
 const sgMail = require("@sendgrid/mail");
 
@@ -121,6 +121,47 @@ class UserAPI extends DataSource {
       return this.res.status(500).send("Server error");
     }
   };
+
+  verifyEmail = async ({token}) => {
+    try {
+      const decodedToken = await verifyToken(token);
+      
+      if(!decodedToken) {
+        return {
+          error: true, 
+          message: 'Invalid token', 
+          code: 403
+        }
+      }
+
+      await User.update(
+        {
+          emailVerified: true
+        },
+        {
+          where: {
+            id: decodedToken.id
+          }
+        }
+      );
+
+      return {
+        message: 'Email verified!', 
+        body: token
+      }
+    } catch (error) {
+      console.log(error)
+      return {
+        error: true, 
+        message: JSON.stringify(error), 
+        code: 500
+      }
+    }
+  }
+
+  resendVerificationEmail = async ({ email, password }) => {
+    //  @TODO - handle this
+  }
 
   logUserIn = async ({ email, password }) => {
     try {
