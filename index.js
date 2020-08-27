@@ -1,5 +1,6 @@
 const { ApolloServer, gql, ApolloError } = require("apollo-server");
 const UserAPI = require("./datasources/user");
+const { verifyToken } = require("./middleware/auth");
 
 const typeDefs = gql`
   type User {
@@ -19,6 +20,8 @@ const typeDefs = gql`
     ): UserResponse
     logUserIn(email: String!, password: String!): UserResponse
     verifyEmail(token: String!): UserResponse
+    resendVerification(token: String!): UserResponse
+    checkSession: UserResponse
   }
 
   # Query is a special type that lists all available queries
@@ -59,7 +62,7 @@ const resolvers = {
         lastName,
         password,
       });
-      if (res.error) {
+      if (res.error) {       
         throw new ApolloError(res.message, res.code);
       }
       return res;
@@ -78,6 +81,32 @@ const resolvers = {
       }
       return res;
     },
+    resendVerification: async (_, {token}, { dataSources }) => {
+      const res = await dataSources.userAPI.resendVerificationEmail({token});
+      if (res.error) {
+        throw new ApolloError(res.message, res.code);
+      }
+
+      return res;
+    },
+    checkSession: async (_, __, context) => {
+      const { req } = context;
+      try {
+        const token = req.headers.authorization;
+ 
+        const user = await verifyToken(token)
+        if(!user.validToken) {
+          throw new ApolloError(user.message, 401);
+        }
+
+        return {
+          message: "User authenticated", 
+          body: token
+        };
+      } catch (error) {   
+        throw new ApolloError(error.message, error.extensions.code);
+      }
+    }
   },
 };
 
@@ -86,6 +115,9 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  context: async (req) => { 
+    return req;
+  },
   dataSources: () => ({
     userAPI: new UserAPI(),
   }),

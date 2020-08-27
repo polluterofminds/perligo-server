@@ -16,9 +16,17 @@ module.exports = {
     //  Verify token
     try {
       const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-      return decoded.user;
+      console.log(decoded)
+      return {
+        validToken: true, 
+        user: decoded.user
+      }
     } catch(err) {
-      return null;
+      console.log(err)
+      return {
+        validToken: false, 
+        message: err.message
+      };
     }
   }
 }
