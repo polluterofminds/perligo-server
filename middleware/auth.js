@@ -16,7 +16,6 @@ module.exports = {
     //  Verify token
     try {
       const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-      console.log(decoded)
       return {
         validToken: true, 
         user: decoded.user

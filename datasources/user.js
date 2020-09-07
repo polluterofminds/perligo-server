@@ -102,20 +102,38 @@ class UserAPI extends DataSource {
         }
       }
 
-      await User.update(
+      const user = await User.update(
         {
           emailVerified: true
         },
         {
+          returning:true,
           where: {
-            id: decodedToken.id
+            email: decodedToken.user.email
           }
-        }
+        },         
       );
+
+      const { firstName, lastName, emailVerified,  avatar } = user[1][0].dataValues;
+      
+      const payload = {
+        user: {
+          firstName, 
+          lastName, 
+          email: user.email,
+          emailVerified, 
+          avatar
+        },
+      };
+
+      //  Return JWT
+      const newToken = jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: 3600,
+      });
 
       return {
         message: 'Email verified!', 
-        body: token
+        body: newToken
       }
     } catch (error) {
       console.log(error)
@@ -249,7 +267,6 @@ class UserAPI extends DataSource {
       const decoded = await jwt.verify(token, process.env.JWT_SECRET);
       //  @TODO - Verify token expiry
       const { user } = decoded;
-    
       const userFound = await User.findOne({
         where: {
           email: user.email
