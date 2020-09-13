@@ -1,3 +1,5 @@
+const member = require("./member");
+
 module.exports = (sequelize, DataTypes) => {
   const user = sequelize.define('user', {
     id: {
@@ -29,7 +31,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false, 
       defaultValue: false
     }
-  })
+  });
+
+  user.associate = function (models) {
+    // associations can be defined here
+    user.hasMany(models.member, {foreignKey: 'member', sourceKey: 'id'});
+  };
 
   return user;
 }
